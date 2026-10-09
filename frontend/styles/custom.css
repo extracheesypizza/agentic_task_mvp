@@ -1,0 +1,42 @@
+/* MedTranslate — custom Streamlit styling */
+
+/* Center the main content, max width */
+.block-container {
+    max-width: 800px;
+    padding-top: 2rem;
+}
+
+/* Style the main title */
+h1 {
+    color: #2c3e50;
+    font-weight: 700;
+}
+
+/* Make the upload area stand out */
+[data-testid="stFileUploader"] {
+    border: 2px dashed #3498db;
+    border-radius: 12px;
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+}
+
+/* Style the analyze button */
+.stButton > button {
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 0.5rem 2rem;
+}
+
+/* Explanation card */
+.explanation-card {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+/* Disclaimer styling */
+div[data-testid="stAlert"] {
+    border-radius: 8px;
+}

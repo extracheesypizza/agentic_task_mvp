@@ -1,0 +1,24 @@
+# Web
+fastapi==0.115.*
+uvicorn[standard]==0.34.*
+python-multipart==0.0.*
+streamlit==1.41.*
+requests==2.32.*
+
+# LLM via OpenRouter (OpenAI-compatible SDK)
+openai==1.58.*
+
+# Local OCR
+pytesseract==0.3.*
+Pillow==11.*
+pdf2image==1.17.*
+
+# Local embeddings
+sentence-transformers==3.*
+
+# Vector store
+chromadb==0.6.*
+
+# Utilities
+python-dotenv==1.*
+pydantic-settings==2.*

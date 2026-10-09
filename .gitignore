@@ -1,0 +1,52 @@
+# --- Secrets ---
+# .env
+.env.local
+.env.*.local
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# --- Sentence-Transformers model cache ---
+.cache/
+root/.cache/
+
+# --- ChromaDB persisted data ---
+data/chroma/
+
+# --- Uploads / user data ---
+data/uploads/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- Logs ---
+*.log
+
+# --- mypy / linters ---
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/

@@ -1,0 +1,72 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: medtranslate-ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=-1        # never unload idle models
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_FLASH_ATTENTION=1
+    volumes:
+      - ollama_models:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama ps >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ── One-shot: pulls the model into the shared volume, then exits ──
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: medtranslate-ollama-init
+    entrypoint: ["ollama", "pull", "medgemma:4b"]
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    volumes:
+      - ollama_models:/root/.ollama
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build: .
+    container_name: medtranslate-backend
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434/v1
+      - ANONYMIZED_TELEMETRY=False
+    volumes:
+      # Bind mount, not a named volume: reuses the index you built on the host
+      - ./data/chroma:/app/data/chroma
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 120s   # first run builds the index
+  
+  frontend:
+    build: .
+    container_name: medtranslate-frontend
+    ports:
+      - "8501:8501"
+    env_file: .env
+    environment:
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0
+  
+
+volumes:
+  ollama_models:
