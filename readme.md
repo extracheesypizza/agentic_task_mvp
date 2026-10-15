@@ -1,9 +1,8 @@
-
 # MedTranslate
 
 Translates medical jargon into plain Russian. You upload a photo of a lab result or prescription, and the app explains what everything means in normal language.
 
-Made as a group project for the MAS course, 2026/27.
+Made as a group project for the MAS course, 2026/27. Google Presentation link: [click](https://docs.google.com/presentation/d/1fO4Bg-KvhK54_chnVvfkShuPnoOIKov-wPjIMQHEg1U/edit?usp=sharing)
 
 > This is not medical advice. Always talk to your doctor.
 
