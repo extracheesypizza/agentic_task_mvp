@@ -11,7 +11,6 @@ from pathlib import Path
 from tqdm import tqdm
 
 OUTPUT = Path("data/raw/wikidata")
-OUTPUT.mkdir(parents=True, exist_ok=True)
 
 SPARQL_URL = "https://query.wikidata.org/sparql"
 HEADERS = {
@@ -77,7 +76,11 @@ def run_query(sparql: str) -> list[dict]:
             term = b.get("itemLabel", {}).get("value", "")
             desc = b.get("itemDescription", {}).get("value", "")
             if term:
-                results.append({"term": term, "description": desc})
+                entry = {"term": term, "description": desc}
+                url = b.get("item", {}).get("value")
+                if isinstance(url, str) and url.startswith(("http://", "https://")):
+                    entry["source_url"] = url
+                results.append(entry)
         return results
 
     except Exception as e:
@@ -99,6 +102,7 @@ if __name__ == "__main__":
                 all_results.append(row)
         time.sleep(2)  # Wikidata rate limit
 
+    OUTPUT.mkdir(parents=True, exist_ok=True)
     out = OUTPUT / "wikidata_medical_terms.json"
     with open(out, "w", encoding="utf-8") as f:
         json.dump(all_results, f, ensure_ascii=False, indent=2)

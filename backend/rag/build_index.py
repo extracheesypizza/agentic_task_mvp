@@ -23,6 +23,13 @@ BATCH_SIZE = 100
 GLOSSARY_PATH = Path("backend/rag/glossary.json")
 
 
+def _source_metadata(item: dict) -> dict:
+    url = item.get("source_url")
+    if isinstance(url, str) and url.startswith(("http://", "https://")):
+        return {"source_url": url}
+    return {}
+
+
 def build_index() -> int:
     """
     (Re)build the medical glossary index. Returns the number of terms indexed.
@@ -68,6 +75,7 @@ def build_index() -> int:
                     "category": t.get("category", ""),
                     "unit": t.get("unit", ""),
                     "reference_range": t.get("reference_range", ""),
+                    **_source_metadata(t),
                 }
                 for t in batch
             ],

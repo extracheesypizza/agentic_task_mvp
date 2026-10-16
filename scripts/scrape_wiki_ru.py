@@ -11,7 +11,6 @@ from pathlib import Path
 from tqdm import tqdm
 
 OUTPUT = Path("data/raw/wikipedia")
-OUTPUT.mkdir(parents=True, exist_ok=True)
 
 WIKI_API = "https://ru.wikipedia.org/w/api.php"
 HEADERS = {
@@ -92,7 +91,8 @@ def fetch_article(title: str, max_retries: int = 3) -> dict | None:
     params = {
         "action": "query",
         "titles": title,
-        "prop": "extracts",
+        "prop": "extracts|info",
+        "inprop": "url",
         "exintro": True,
         "explaintext": True,
         "format": "json",
@@ -139,11 +139,15 @@ def fetch_article(title: str, max_retries: int = 3) -> dict | None:
         if len(extract) < 30:
             return None
 
-        return {
+        entry = {
             "term": page.get("title", title),
             "plain": extract,
             "source": "wikipedia_ru",
         }
+        url = page.get("fullurl")
+        if isinstance(url, str) and url.startswith(("http://", "https://")):
+            entry["source_url"] = url
+        return entry
 
     print(f"  ✗ Gave up on '{title}' after {max_retries} retries")
     return None
@@ -161,6 +165,7 @@ if __name__ == "__main__":
             skipped.append(term)
         time.sleep(1.5)  # ← was 0.3, now 1.5 seconds
 
+    OUTPUT.mkdir(parents=True, exist_ok=True)
     out = OUTPUT / "wiki_medical_terms.json"
     with open(out, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)

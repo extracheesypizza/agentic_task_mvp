@@ -35,6 +35,13 @@ def valid_entry(item, text_key: str) -> bool:
     )
 
 
+def _source_metadata(item: dict) -> dict:
+    url = item.get("source_url")
+    if isinstance(url, str) and url.startswith(("http://", "https://")):
+        return {"source_url": url}
+    return {}
+
+
 def build():
     entries = []
     seen = set()
@@ -74,6 +81,7 @@ def build():
             "unit": "",
             "what_it_means": "",
             "source": "wikipedia_ru",
+            **_source_metadata(item),
         })
 
     # ── Priority 3: Wikidata ─────────────────────────────────────
@@ -94,6 +102,7 @@ def build():
                 "unit": "",
                 "what_it_means": "",
                 "source": "wikidata",
+                **_source_metadata(item),
             })
 
     # ── Filter: keep only entries with meaningful content ────────
