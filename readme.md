@@ -130,6 +130,10 @@ python -m pytest tests
 
 These tests use substitutes for external services and check application behavior; they do not measure OCR or model answer quality. They do not require Ollama. A real upload-to-answer run requires Ollama with the configured model available, in addition to the native OCR dependency or the Docker environment.
 
+### Optional glossary generation
+
+Glossary generation is a manual preparation step using free LLMs via OpenRouter. It is not needed for offline tests. Copy `.env.glossary.example` to `.env.glossary.local` with `cp -n .env.glossary.example .env.glossary.local`, then set `OPENROUTER_API_KEY`. The separate `GLOSSARY_MODEL` overrides the original free primary model; the original free fallback list is preserved. Availability of these historical model IDs has not been verified. The script writes `data/raw/llm_generated/llm_glossary.json`. Run `python scripts/generate_glossary_llm.py` only when you intend to make external requests. Generation does not merge or reindex the glossary. See [the RAG roadmap](docs/rag-roadmap.md) for the current limits and proposed next steps.
+
 ---
 
 ## Project structure
