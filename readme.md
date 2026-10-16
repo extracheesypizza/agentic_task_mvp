@@ -29,7 +29,7 @@ We tried OpenRouter free models first but kept getting 403 errors because cloud 
 
 ## The model
 
-We use **Qwen 2.5 7B** running locally through **Ollama**.
+We use **Google MedGemma:4B** running locally through **Ollama**.
 
 It does two things:
 
@@ -38,11 +38,11 @@ It does two things:
 
 We chose a local model because:
 
-- Free cloud APIs kept blocking medical content (403 errors)
+- Free cloud APIs kept blocking medical content [403 errors]
 - No rate limits, no API keys needed
 - Anyone who clones the repo gets the same result
 
-Embeddings for RAG use `sentence-transformers/all-MiniLM-L6-v2` (runs locally too).
+Embeddings for [future] RAG [will] use `sentence-transformers/all-MiniLM-L6-v2` [runs locally too].
 
 ---
 
