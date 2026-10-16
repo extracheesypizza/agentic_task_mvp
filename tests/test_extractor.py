@@ -102,3 +102,11 @@ def test_additional_document_metadata_is_preserved(monkeypatch):
     result = extractor.extract_structured("synthetic OCR")
     assert result["patient_info"] == payload["patient_info"]
     assert result["raw_notes"] == payload["raw_notes"]
+
+
+@pytest.mark.parametrize("status", ["critical", "unreadable"])
+def test_statuses_already_supported_by_original_frontend_are_preserved(monkeypatch, status):
+    payload = {**VALID, "findings": [{"parameter": "Hb", "value": "123", "status": status}]}
+    chat = reply(monkeypatch, json.dumps(payload))
+    assert extractor.extract_structured("synthetic OCR")["findings"][0]["status"] == status
+    chat.assert_called_once()

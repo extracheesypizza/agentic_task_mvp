@@ -12,7 +12,7 @@ class Finding(BaseModel):
     value: str | int | float | None = None
     unit: str | None = None
     reference_range: str | None = None
-    status: Literal["below_normal", "normal", "above_normal", "unknown"] | None = "unknown"
+    status: Literal["below_normal", "normal", "above_normal", "unknown", "critical", "unreadable"] | None = "unknown"
 
 
 class Medication(BaseModel):
