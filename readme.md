@@ -130,6 +130,10 @@ python -m pytest tests
 
 These tests use substitutes for external services and check application behavior; they do not measure OCR or model answer quality. They do not require Ollama. A real upload-to-answer run requires Ollama with the configured model available, in addition to the native OCR dependency or the Docker environment.
 
+### Read-only corpus check
+
+Run `python -m scripts.check_glossary` from the repository root, or pass a JSON file as the final argument. The command uses the glossary builder's record validation rules and reports sources, duplicate terms, empty/unusable definitions, and HTTP(S) source URL coverage. It does not modify files, make network requests, load models, or require extra dependencies. Missing source labels or URLs produce warnings; malformed or empty input, invalid records, and duplicate terms return exit code `1`. Otherwise it returns `0`. This checks structure and provenance metadata, not medical accuracy or whether a URL is reachable.
+
 ### Manual model connection check
 
 With Ollama running and the configured model available, run `python -m backend.test` from the repository root. This explicitly calls the model selected by `MODEL_EXPLANATION` and prints its response. Exit code is `0` for a non-empty response and `1` for a model-service error or empty response. This checks model communication only, not OCR, retrieval, or answer quality. Importing the module and running the offline tests do not make model requests.
