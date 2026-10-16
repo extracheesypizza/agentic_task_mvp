@@ -7,6 +7,7 @@ Uses the MediaWiki API — no HTML parsing, no BeautifulSoup.
 import requests
 import json
 import time
+import sys
 from pathlib import Path
 from tqdm import tqdm
 
@@ -153,7 +154,7 @@ def fetch_article(title: str, max_retries: int = 3) -> dict | None:
     return None
 
 
-if __name__ == "__main__":
+def main() -> int:
     results = []
     skipped = []
 
@@ -165,6 +166,10 @@ if __name__ == "__main__":
             skipped.append(term)
         time.sleep(1.5)  # ← was 0.3, now 1.5 seconds
 
+    if not results:
+        print("No Wikipedia articles collected; output files are unchanged.", file=sys.stderr)
+        return 1
+
     OUTPUT.mkdir(parents=True, exist_ok=True)
     out = OUTPUT / "wiki_medical_terms.json"
     with open(out, "w", encoding="utf-8") as f:
@@ -175,3 +180,8 @@ if __name__ == "__main__":
         print(f"⊘ Skipped {len(skipped)}:")
         for s in skipped:
             print(f"   - {s}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

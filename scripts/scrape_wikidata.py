@@ -7,6 +7,7 @@ SPARQL endpoint: https://query.wikidata.org/sparql
 import requests
 import json
 import time
+import sys
 from pathlib import Path
 from tqdm import tqdm
 
@@ -88,7 +89,7 @@ def run_query(sparql: str) -> list[dict]:
         return []
 
 
-if __name__ == "__main__":
+def main() -> int:
     all_results = []
     seen = set()
 
@@ -102,9 +103,18 @@ if __name__ == "__main__":
                 all_results.append(row)
         time.sleep(2)  # Wikidata rate limit
 
+    if not all_results:
+        print("No Wikidata records collected; output files are unchanged.", file=sys.stderr)
+        return 1
+
     OUTPUT.mkdir(parents=True, exist_ok=True)
     out = OUTPUT / "wikidata_medical_terms.json"
     with open(out, "w", encoding="utf-8") as f:
         json.dump(all_results, f, ensure_ascii=False, indent=2)
 
     print(f"\n✅ Saved {len(all_results)} terms → {out}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

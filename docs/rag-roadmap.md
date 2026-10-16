@@ -15,6 +15,7 @@ The glossary generator is a separate, explicitly invoked preparation step. It wr
 - Missing credentials or model configuration should produce a clear error before any request is made.
 - Generated output is kept separate at `data/raw/llm_generated/llm_glossary.json`; generation, merge, and reindex are explicit manual operations.
 - If generation produces no entries, or the merge has no usable records, it fails without replacing the existing output. Review generated drafts before merging: the existing LLM → Wikipedia → Wikidata precedence is preserved and does not establish source quality.
+- The Wikipedia/Wikidata collectors likewise exit with code `1` without creating or overwriting output files when no records are collected. Successful and partially successful runs retain the existing save behavior.
 
 ## Next steps
 
