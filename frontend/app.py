@@ -6,6 +6,7 @@ Run: streamlit run frontend/app.py --server.port 8501
 import streamlit as st
 import requests
 import os
+import hashlib
 
 from config import APP_TITLE, APP_SUBTITLE, BACKEND_URL
 from components.upload_card import render_upload
@@ -35,7 +36,14 @@ st.divider()
 uploaded_file = render_upload()
 
 if uploaded_file is not None:
+    upload_identity = hashlib.sha256(uploaded_file.getvalue()).hexdigest()
+    if st.session_state.get("analysis_upload_identity") != upload_identity:
+        st.session_state["analysis_upload_identity"] = upload_identity
+        st.session_state["analysis_result"] = None
+
     if st.button("🔍 Анализировать", type="primary", use_container_width=True):
+        # A failed request must not leave the previous analysis visible.
+        st.session_state["analysis_result"] = None
         with st.spinner("Читаем документ... Это может занять 10–20 секунд."):
             try:
                 resp = requests.post(
@@ -45,21 +53,32 @@ if uploaded_file is not None:
                 )
                 resp.raise_for_status()
                 data = resp.json()
+                if (
+                    not isinstance(data, dict)
+                    or not isinstance(data.get("explanation"), str)
+                    or not isinstance(data.get("structured"), dict)
+                ):
+                    raise ValueError("unexpected response shape")
+                st.session_state["analysis_result"] = data
             except requests.exceptions.ConnectionError:
                 st.error("❌ Не удалось подключиться к серверу.")
-                st.stop()
             except requests.exceptions.Timeout:
                 st.error("⏱ Сервер не ответил вовремя. Попробуйте ещё раз.")
-                st.stop()
             except requests.exceptions.HTTPError as e:
                 st.error(f"❌ Ошибка: {e.response.status_code} — {e.response.text}")
-                st.stop()
+            except (ValueError, requests.exceptions.RequestException):
+                st.error("❌ Сервер вернул некорректный ответ. Попробуйте ещё раз.")
+else:
+    st.session_state.pop("analysis_upload_identity", None)
+    st.session_state.pop("analysis_result", None)
 
-        # ── Results ───────────────────────────────────────────────
-        st.divider()
-        render_explanation(data["explanation"])
+# ── Results ─────────────────────────────────────────────────────────
+data = st.session_state.get("analysis_result")
+if data is not None:
+    st.divider()
+    render_explanation(data["explanation"])
 
-        with st.expander("📋 Структурированные данные"):
-            render_structured(data["structured"])
+    with st.expander("📋 Структурированные данные"):
+        render_structured(data["structured"])
 
-        render_disclaimer()
+    render_disclaimer()
