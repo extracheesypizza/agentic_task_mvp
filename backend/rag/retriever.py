@@ -8,6 +8,7 @@ in a fresh Docker container with an empty volume.
 """
 
 import logging
+from urllib.parse import urlsplit
 
 import chromadb
 from chromadb.config import Settings as ChromaSettings
@@ -75,18 +76,21 @@ def _get_collection():
 
 
 def get_context(terms: list[str], top_k: int = 5) -> str:
-    """
-    Given medical terms extracted from a document, return their
-    plain-language explanations formatted for injection into an LLM prompt.
-    """
+    """Keep the original text-only interface for existing callers."""
+    context, _ = get_context_with_materials(terms, top_k)
+    return context
+
+
+def get_context_with_materials(terms: list[str], top_k: int = 5) -> tuple[str, list[dict]]:
+    """Return the original prompt context and its materials from one query."""
     if not terms:
-        return ""
+        return "", []
 
     collection = _get_collection()
     count = collection.count()
     if count == 0:
         logger.warning("Collection is empty — returning no RAG context.")
-        return ""
+        return "", []
 
     results = collection.query(
         query_texts=terms,
@@ -94,6 +98,7 @@ def get_context(terms: list[str], top_k: int = 5) -> str:
     )
 
     context_parts: list[str] = []
+    materials: list[dict] = []
     seen: set[str] = set()
 
     for docs, metas in zip(results["documents"], results["metadatas"]):
@@ -109,8 +114,22 @@ def get_context(terms: list[str], top_k: int = 5) -> str:
             if ref := meta.get("reference_range"):
                 entry += f"\n  - Референсные значения: {ref}"
             context_parts.append(entry)
+            source = meta.get("source")
+            url = meta.get("source_url")
+            try:
+                parsed = urlsplit(url) if isinstance(url, str) else None
+                valid_url = parsed is not None and parsed.scheme in {"http", "https"} and bool(parsed.hostname)
+                if parsed is not None:
+                    parsed.port  # Reject malformed optional ports without dropping the entry.
+            except ValueError:
+                valid_url = False
+            materials.append({
+                "term": term_name,
+                "source": source if isinstance(source, str) and source.strip() else None,
+                "source_url": url if valid_url else None,
+            })
 
-    return "\n\n".join(context_parts)
+    return "\n\n".join(context_parts), materials
 
 
 def index_status() -> dict:

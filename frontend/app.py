@@ -12,6 +12,7 @@ from config import APP_TITLE, APP_SUBTITLE, BACKEND_URL
 from components.upload_card import render_upload
 from components.result_display import render_explanation
 from components.structured_view import render_structured
+from components.reference_materials import render_reference_materials
 from components.disclaimer import render_disclaimer
 
 # ── Page config ───────────────────────────────────────────────────────
@@ -80,5 +81,7 @@ if data is not None:
 
     with st.expander("📋 Структурированные данные"):
         render_structured(data["structured"])
+
+    render_reference_materials(data.get("retrieved_materials"))
 
     render_disclaimer()

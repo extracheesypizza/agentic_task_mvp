@@ -21,8 +21,10 @@ The glossary generator is a separate, explicitly invoked preparation step. It wr
 
 Source URLs are now optionally retained by the Wikipedia/Wikidata collectors, the glossary merge, and Chroma metadata during future explicit runs. Legacy records without URLs remain supported. This does not backfill the checked-in corpus, rebuild the index, change retrieval or prompts, or add citations to the UI. URLs emitted by the term-only LLM generator are not treated as verified sources or inherited from lower-priority duplicate records.
 
+The API now exposes the entries used to form the context as `retrieved_materials`, and the UI lists them separately from the explanation. This uses the same retrieval query and deduplication as before. Missing source labels and URLs remain unknown; the existing index builder does not store source labels. The list makes retrieval visible but does not establish claim-level attribution or medical accuracy.
+
 1. **Improve source grounding.** Build a curated corpus with source URL, title, date, and content. Have the generator transform provided source material, retain its provenance, and keep generated drafts separate from source records.
-2. **Make retrieval auditable.** Preserve source metadata through chunking and indexing so retrieved context can be inspected and attributed. Define how the app presents source information before claiming that explanations are citation-backed.
+2. **Make retrieval auditable.** Extend provenance through chunking and indexing, including source labels, and evaluate attribution between generated claims and retrieved material before describing explanations as citation-backed.
 3. **Evaluate retrieval and explanations.** Create a small reviewed set covering abbreviations, common terms, unknown terms, and missing context. Check retrieval relevance, unsupported statements, and safe handling of uncertainty.
 4. **Validate the full runtime path.** Separately exercise real OCR and model calls with representative documents, alongside the existing offline tests. Record limitations and review results before making quality claims.
 

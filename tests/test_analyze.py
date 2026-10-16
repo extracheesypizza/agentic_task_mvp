@@ -21,7 +21,7 @@ from PIL import Image, UnidentifiedImageError
 def api(monkeypatch):
     # Avoid importing Chroma/Torch or running the production model-loading lifespan.
     retriever = types.ModuleType("backend.rag.retriever")
-    retriever.get_context = Mock(return_value="Synthetic reference")
+    retriever.get_context_with_materials = Mock(return_value=("Synthetic reference", []))
     with monkeypatch.context() as local:
         local.setitem(sys.modules, "backend.rag.retriever", retriever)
         spec = importlib.util.spec_from_file_location("analyze_under_test", Path(__file__).parents[1] / "backend/routers/upload.py")
@@ -30,7 +30,7 @@ def api(monkeypatch):
     for name, value in {
         "extract_text_from_image": "Гемоглобин 123 г/л. Синтетический бланк.",
         "extract_structured": {"document_type": "lab_result", "findings": [{"parameter": "Гемоглобин", "value": "123"}], "medications": []},
-        "get_context": "Synthetic reference",
+        "get_context_with_materials": ("Synthetic reference", []),
         "explain": "Синтетическое объяснение.",
     }.items():
         monkeypatch.setattr(module, name, Mock(return_value=value))
@@ -48,9 +48,10 @@ def test_happy_path_preserves_response_contract(api):
     client, module = api
     response = upload(client)
     assert response.status_code == 200
-    assert set(response.json()) == {"raw_text", "structured", "explanation"}
+    assert set(response.json()) == {"raw_text", "structured", "explanation", "retrieved_materials"}
+    assert response.json()["retrieved_materials"] == []
     assert response.json()["structured"]["findings"][0]["value"] == "123"
-    module.get_context.assert_called_once_with(["Гемоглобин"])
+    module.get_context_with_materials.assert_called_once_with(["Гемоглобин"])
     assert "Disclaimer" in response.json()["explanation"]
 
 
@@ -79,7 +80,7 @@ def test_unreadable_extraction_stops_pipeline(api):
     client, module = api
     module.extract_structured.return_value = {"document_type": "unreadable", "findings": [], "medications": []}
     assert upload(client).status_code == 422
-    module.get_context.assert_not_called()
+    module.get_context_with_materials.assert_not_called()
     module.explain.assert_not_called()
 
 
@@ -105,7 +106,7 @@ def test_provider_outage_returns_503(api, stage):
 
 def test_retrieval_outage_returns_503_without_generating(api):
     client, module = api
-    module.get_context.side_effect = RuntimeError("index unavailable")
+    module.get_context_with_materials.side_effect = RuntimeError("index unavailable")
     assert upload(client).status_code == 503
     module.explain.assert_not_called()
 
@@ -113,8 +114,10 @@ def test_retrieval_outage_returns_503_without_generating(api):
 def test_prescription_without_findings_skips_retrieval(api):
     client, module = api
     module.extract_structured.return_value = {"document_type": "prescription", "findings": [], "medications": [{"name": "as printed"}]}
-    assert upload(client).status_code == 200
-    module.get_context.assert_not_called()
+    response = upload(client)
+    assert response.status_code == 200
+    assert response.json()["retrieved_materials"] == []
+    module.get_context_with_materials.assert_not_called()
     module.explain.assert_called_once_with(module.extract_structured.return_value, "")
 
 
@@ -122,6 +125,20 @@ def test_empty_explanation_returns_502(api):
     client, module = api
     module.explain.return_value = "   "
     assert upload(client).status_code == 502
+
+
+def test_materials_are_returned_separately_without_changing_explanation_context(api):
+    client, module = api
+    materials = [
+        {"term": "Hb", "source": "wikipedia_ru", "source_url": "https://example.org/Hb"},
+        {"term": "Protein", "source": None, "source_url": None},
+    ]
+    module.get_context_with_materials.return_value = ("Unchanged context", materials)
+    response = upload(client)
+    assert response.status_code == 200
+    assert response.json()["retrieved_materials"] == materials
+    module.explain.assert_called_once_with(module.extract_structured.return_value, "Unchanged context")
+    module.get_context_with_materials.assert_called_once_with(["Гемоглобин"])
 
 
 @pytest.mark.parametrize("content", [None, "", "   "])

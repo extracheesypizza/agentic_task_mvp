@@ -17,6 +17,8 @@ Made as a group project for the MAS course, 2026/27. Google Presentation link: [
 5. A second LLM call writes a plain-language explanation in Russian
 6. A basic safety filter redacts some English phrases and appends a disclaimer; it does not guarantee that diagnoses or treatment advice are absent
 
+The result also includes a collapsible “Найденные справочные материалы” section when retrieval finds entries. `/api/analyze` returns these separately as `retrieved_materials`: a list of `{term, source, source_url}`, with unavailable metadata represented by `null`. These are retrieved glossary entries, not citations proving each statement in the generated explanation. Older indexes may lack source labels or URLs; the UI marks the source as unspecified and only shows links when available. Older API responses without this field remain supported by the UI. This does not backfill the corpus or rebuild the index.
+
 ---
 
 ## Why LLM

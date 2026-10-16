@@ -13,7 +13,7 @@ from starlette.concurrency import run_in_threadpool
 from backend.config import settings
 from backend.services.ocr import extract_text_from_image
 from backend.services.extractor import extract_structured
-from backend.rag.retriever import get_context
+from backend.rag.retriever import get_context_with_materials
 from backend.services.explainer import explain
 from backend.services.safety import sanitize
 
@@ -62,7 +62,9 @@ async def analyze(file: UploadFile = File(...)):
     # ── 3. RAG context (local embeddings) ────────────────────────
     terms = [f["parameter"] for f in structured.get("findings", []) if f.get("parameter")]
     try:
-        rag_context = await run_in_threadpool(get_context, terms) if terms else ""
+        rag_context, retrieved_materials = (
+            await run_in_threadpool(get_context_with_materials, terms) if terms else ("", [])
+        )
     except Exception as e:
         logger.error("Reference retrieval failed: %s", type(e).__name__)
         raise HTTPException(503, "Reference service unavailable. Try again later.")
@@ -86,4 +88,5 @@ async def analyze(file: UploadFile = File(...)):
         "raw_text": raw_text,
         "structured": structured,
         "explanation": explanation,
+        "retrieved_materials": retrieved_materials,
     }
