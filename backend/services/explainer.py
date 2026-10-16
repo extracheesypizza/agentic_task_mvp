@@ -53,6 +53,9 @@ def explain(structured: dict, rag_context: str) -> str:
         max_tokens=2000,
     )
 
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("The model returned an empty explanation")
+
     if not rag_context:
         text = NO_CONTEXT_FALLBACK + text
 

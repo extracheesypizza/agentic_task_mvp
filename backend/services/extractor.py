@@ -9,7 +9,10 @@ object or truncates a field.
 import json
 import logging
 
+from openai import OpenAIError
+
 from backend.config import settings
+from backend.schemas import Extraction
 from backend.services.llm_client import chat
 
 logger = logging.getLogger(__name__)
@@ -45,6 +48,8 @@ Rules:
 
 def _coerce(raw: str) -> dict:
     """Parse model output, tolerating stray markdown fences."""
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError("Model returned no text")
     text = raw.strip()
     if text.startswith("```"):
         text = "\n".join(
@@ -59,19 +64,12 @@ def _coerce(raw: str) -> dict:
         raise
 
 
-def _is_valid(data: dict) -> bool:
-    """A usable extraction has a document_type and at least one finding or medication."""
-    if not isinstance(data, dict) or not data.get("document_type"):
-        return False
-    return bool(data.get("findings") or data.get("medications"))
-
-
 def extract_structured(raw_text: str, max_retries: int = 3) -> dict:
     """
     Convert raw OCR text into a structured dict.
 
-    Raises ValueError if the model cannot produce valid JSON after retries,
-    so the caller returns a clean 502 instead of a 500 traceback.
+    Raises ValueError for invalid output (HTTP 502), RuntimeError for an
+    unavailable model service (HTTP 503). No clinical values are inferred.
     """
     last_error: Exception | None = None
 
@@ -85,16 +83,16 @@ def extract_structured(raw_text: str, max_retries: int = 3) -> dict:
                 max_tokens=1500,
                 json_mode=True,
             )
-        except Exception as e:
+        except OpenAIError as e:
             last_error = e
-            logger.warning("Extraction attempt %d failed: %s", attempt + 1, e)
+            logger.warning("Extraction attempt %d failed: %s", attempt + 1, type(e).__name__)
             continue
 
         try:
-            data = _coerce(raw)
-        except (json.JSONDecodeError, ValueError) as e:
+            data = Extraction.model_validate(_coerce(raw))
+        except ValueError as e:
             last_error = e
-            logger.warning("Extraction attempt %d returned invalid JSON: %s", attempt + 1, e)
+            logger.warning("Extraction attempt %d returned invalid data", attempt + 1)
             # Nudge harder on the next attempt
             raw_text = (
                 "IMPORTANT: Respond with ONLY a valid JSON object. "
@@ -102,10 +100,8 @@ def extract_structured(raw_text: str, max_retries: int = 3) -> dict:
             )
             continue
 
-        if _is_valid(data):
-            return data
+        return data.model_dump()
 
-        last_error = ValueError(f"Extraction missing required fields: {list(data.keys())}")
-        logger.warning("Extraction attempt %d produced an empty result", attempt + 1)
-
-    raise ValueError(f"Failed to extract structured data after {max_retries} attempts: {last_error}")
+    if isinstance(last_error, OpenAIError):
+        raise RuntimeError("LLM service unavailable after extraction retries") from last_error
+    raise ValueError(f"Failed to extract valid structured data after {max_retries} attempts") from last_error

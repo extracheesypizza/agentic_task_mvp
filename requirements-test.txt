@@ -1,0 +1,11 @@
+# Lightweight regression environment: no LLM, embedding model or vector store.
+pytest==8.3.*
+httpx==0.28.*
+fastapi==0.115.*
+python-multipart==0.0.*
+openai==1.58.*
+pydantic-settings==2.*
+streamlit==1.41.*
+requests==2.32.*
+Pillow==11.*
+pytesseract==0.3.*
